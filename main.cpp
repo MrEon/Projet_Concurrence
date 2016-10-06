@@ -1,10 +1,14 @@
 #include <iostream>
+#include <pthread.h>
+
 #include <string>
 
 
 using namespace std;
 
 #include "Person.h"
+
+//Produces the next coordinates to use for spawning purpouses
 int* nextCoord(int *arr){
     int tmp = arr[1];
     arr[1] = (arr[1]+8)%128;
@@ -12,6 +16,14 @@ int* nextCoord(int *arr){
         arr[0]-=8;
 
     return arr;
+}
+//Checks if every one has reached the exit
+bool check(bool arr[]){
+    for(int i = 0; i<nbr; i++){
+        if(!arr[i])
+            return false;
+    }
+    return true;
 }
 
 bool contains(int argc, char * argv [], string arg)
@@ -60,49 +72,59 @@ int main(int argc, char * argv[])
     cout << nbr << " " << metrics << " " << thread_mode;
 
 
-    int coord[] = {506, 2};
-    int *ptr = coord;
-    Person ppl[nbr];
+void init(Grid &grid, int *ptr){
     for(int i = 0; i<nbr; i++){
-        ppl[i] = Person(ptr[0], ptr[1]);
+        grid.ppl[i] = Person(ptr[0], ptr[1], i+1);
+        grid.matrix[ptr[0]][ptr[1]] = true;//PPl are 1x1 for now
         ptr = nextCoord(ptr);
     }
+}
 
-    bool arrived = false;
-    printf("Bufferring...");
-    while(!arrived){
+//The heart of the exectution process
+int execute(){
+    int coord[] = {506, 2};
+    int *ptr = coord;
+    //Exit condition && tells the algorithm when to stop moving the ones already there to focus on the ppl still on the field
+    bool arrived[nbr] = {false};
+    Grid grid;
+
+    init(grid,ptr);
+
+
+    while(!check(arrived)){
         for(int i = 0; i<nbr; i++){
-            ppl[i] = ppl[i].move();
-            //printf("Personne %d\n", i);
-            //ppl[i].afficher();
-            if(ppl[i].getX() == endx && (ppl[i].getY() >= endy1 || ppl[i].getY() < endy2))
-                arrived = true;
-            else
-                arrived = false;
+            if(!arrived[i])
+                grid.ppl[i] = grid.ppl[i].move(grid);
+
+            if(grid.ppl[i].getX() == endx && (grid.ppl[i].getY() >= endy1 || grid.ppl[i].getY() < endy2))
+                arrived[i] = true;
         }
-        //printf(".");
     }
     printf("\nDone!");
-    /*Person A, B, C;
-    double d;
+}
 
-    cout << "SAISIE DU POINT A" << endl;
-    A.saisir();
-    cout << endl;
+void four_threads(){
+    int coord[] = {506, 2};
+    int *ptr = coord;
+    //Exit condition && tells the algorithm when to stop moving the ones already there to focus on the ppl still on the field
+    bool arrived[nbr] = {false};
+    Grid grid;
 
-    cout << "SAISIE DU POINT B" << endl;
-    B.saisir();
-    cout << endl;
+    init(grid,ptr);
 
-    C = A.milieu(B);
-    d = A.distance(B);
+    //initiate threads, make a function to cut grid in 4
 
-    cout << "MILIEU DE AB" << endl;
-    C.afficher();
-    cout << endl;
+    while(!check(arrived)){
+        //invoke threaded function
+    }
+    printf("\nDone!");
+}
 
-    cout << "La distance AB vaut : " << d << endl;*/
 
+
+int main()
+{
+    execute();
     return 0;
 }
 

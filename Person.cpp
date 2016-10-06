@@ -15,10 +15,11 @@ using namespace std;
 Person::Person() : x(0), y(0)
 {}
 
-Person::Person(int x, int y)/* : x(x), y(y)*/
+Person::Person(int x, int y, int id)/* : x(x), y(y)*/
 {
     this->x = x;
     this->y = y;
+    this->id = id;
 }
 
 void Person::setX(int x)
@@ -41,7 +42,12 @@ int Person::getY() const
     return this->y;
 }
 
-Person Person::move()
+int Person::getID() const
+{
+    return this->id;
+}
+
+Person Person::move(Grid &grid)
 {
     Person moved;
     moved.y = this->y;
@@ -52,8 +58,8 @@ Person Person::move()
         moved.y = this->y+1;
     else
         moved.x = this->x-1;
-
-
+        grid.matrix[this->x][this->y] -= this->id;
+        grid.matrix[moved.x][moved.y] += this->id;
     return moved;
 }
 /*int Person::distance(const Person &P) const
@@ -79,6 +85,6 @@ void Person::saisir()
 */
 void Person::afficher() const
 {
-    cout << "L'abscisse vaut " << this->x << endl;
-    cout << "L'ordonnée vaut " << this->y << endl;
+    cout << "X vaut " << this->x << endl;
+    cout << "Y vaut " << this->y << endl;
 }
