@@ -38,41 +38,6 @@ bool contains(int argc, char * argv [], string arg)
     return false;
 }
 
-int main(int argc, char * argv[])
-{
-
-    bool metrics = false; // off by default
-    int thread_mode = 1; // t1 by default
-
-    if (contains(argc, argv, "-t0")) // t0
-    {
-        // ONE THREAD
-        thread_mode = 0;
-    }
-    else if (contains(argc, argv, "-t2")) // t2
-    {
-        // ONE THREAD PER PERSON
-        thread_mode = 2;
-    }
-
-    if (contains(argc, argv, "-m"))
-    {
-        //METRICS
-        metrics = true;
-    }
-
-    if (contains(argc, argv, "-p4")) // 16 people
-    {
-        nbr = 16;
-    }
-    else if (contains(argc, argv, "-p8")) // 256 people
-    {
-        nbr = 256;
-    }
-
-    cout << nbr << " " << metrics << " " << thread_mode;
-
-
 void init(Grid &grid, int *ptr){
     for(int i = 0; i<nbr; i++){
         grid.ppl[i] = Person(ptr[0], ptr[1], i+1);
@@ -104,6 +69,46 @@ int execute(){
     printf("\nDone!");
 }
 
+int main(int argc, char * argv[]) {
+
+    bool metrics = false; // off by default
+    int thread_mode = 1; // t1 by default
+
+    if (contains(argc, argv, "-t0")) // t0
+    {
+        // ONE THREAD
+        thread_mode = 0;
+    } else if (contains(argc, argv, "-t2")) // t2
+    {
+        // ONE THREAD PER PERSON
+        thread_mode = 2;
+    }
+
+    if (contains(argc, argv, "-m")) {
+        //METRICS
+        metrics = true;
+    }
+
+    if (contains(argc, argv, "-p4")) // 16 people
+    {
+        nbr = 16;
+    } else if (contains(argc, argv, "-p8")) // 256 people
+    {
+        nbr = 256;
+    }
+
+    cout << nbr << " " << metrics << " " << thread_mode;
+
+    execute();
+
+    return 0;
+}
+
+
+
+
+
+
 void four_threads(){
     int coord[] = {506, 2};
     int *ptr = coord;
@@ -121,12 +126,5 @@ void four_threads(){
     printf("\nDone!");
 }
 
-
-
-int main()
-{
-    execute();
-    return 0;
-}
 
 
