@@ -79,6 +79,6 @@ void Person::saisir()
 */
 void Person::afficher() const
 {
-    cout << "L'abscisse vaut " << this->x << endl;
-    cout << "L'ordonnée vaut " << this->y << endl;
+    cout << "X vaut " << this->x << endl;
+    cout << "Y vaut " << this->y << endl;
 }

@@ -12,29 +12,35 @@ int* nextCoord(int *arr){
     return arr;
 }
 
+bool check(bool arr[]){
+    for(int i = 0; i<nbr; i++){
+        if(!arr[i])
+            return false;
+    }
+    return true;
+}
+
 int main()
 {
     int coord[] = {506, 2};
     int *ptr = coord;
     Person ppl[nbr];
+    bool arrived[nbr] = {false};
     for(int i = 0; i<nbr; i++){
         ppl[i] = Person(ptr[0], ptr[1]);
         ptr = nextCoord(ptr);
     }
 
-    bool arrived = false;
-    printf("Bufferring...");
-    while(!arrived){
+    while(!check(arrived)){
         for(int i = 0; i<nbr; i++){
-            ppl[i] = ppl[i].move();
-            printf("Personne %d\n", i);
-            ppl[i].afficher();
+            if(!arrived[i]) {
+                ppl[i] = ppl[i].move();
+                printf("Personne %d\n", i);
+                ppl[i].afficher();
+            }
             if(ppl[i].getX() == endx && (ppl[i].getY() >= endy1 || ppl[i].getY() < endy2))
-                arrived = true;
-            else
-                arrived = false;
+                arrived[i] = true;
         }
-        printf(".");
     }
     printf("\nDone!");
     /*Person A, B, C;
