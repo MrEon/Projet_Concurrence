@@ -52,6 +52,8 @@ Person Person::move(Grid &grid)
     Person moved;
     moved.y = this->y;
     moved.x = this->x;
+    moved.id = this->id;
+
     if(this->y>=endy2 )
         moved.y = this->y-1;
     else if(this->y<endy1)
