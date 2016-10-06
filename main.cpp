@@ -1,5 +1,7 @@
 #include <iostream>
-#define nbr 8
+#include <string>
+
+
 using namespace std;
 
 #include "Person.h"
@@ -12,8 +14,52 @@ int* nextCoord(int *arr){
     return arr;
 }
 
-int main()
+bool contains(int argc, char * argv [], string arg)
 {
+    for (int i = 0; i < argc; i++)
+    {
+        if (arg.compare(argv[i]) == 0)
+            return true;
+    }
+    return false;
+}
+
+int main(int argc, char * argv[])
+{
+
+    bool metrics = false; // off by default
+    int nbr = 4; // p2 by default
+    int thread_mode = 1; // t1 by default
+
+    if (contains(argc, argv, "-t0")) // t0
+    {
+        // ONE THREAD
+        thread_mode = 0;
+    }
+    else if (contains(argc, argv, "-t2")) // t2
+    {
+        // ONE THREAD PER PERSON
+        thread_mode = 2;
+    }
+
+    if (contains(argc, argv, "-m"))
+    {
+        //METRICS
+        metrics = true;
+    }
+
+    if (contains(argc, argv, "-p4")) // 16 people
+    {
+        nbr = 16;
+    }
+    else if (contains(argc, argv, "-p8")) // 256 people
+    {
+        nbr = 256;
+    }
+
+    cout << nbr << " " << metrics << " " << thread_mode;
+
+
     int coord[] = {506, 2};
     int *ptr = coord;
     Person ppl[nbr];
@@ -27,14 +73,14 @@ int main()
     while(!arrived){
         for(int i = 0; i<nbr; i++){
             ppl[i] = ppl[i].move();
-            printf("Personne %d\n", i);
-            ppl[i].afficher();
+            //printf("Personne %d\n", i);
+            //ppl[i].afficher();
             if(ppl[i].getX() == endx && (ppl[i].getY() >= endy1 || ppl[i].getY() < endy2))
                 arrived = true;
             else
                 arrived = false;
         }
-        printf(".");
+        //printf(".");
     }
     printf("\nDone!");
     /*Person A, B, C;
@@ -59,3 +105,5 @@ int main()
 
     return 0;
 }
+
+
