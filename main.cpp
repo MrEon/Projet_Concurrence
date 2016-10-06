@@ -8,6 +8,8 @@ using namespace std;
 
 #include "Person.h"
 
+static int nbr = 4; // p2 by default
+
 //Produces the next coordinates to use for spawning purpouses
 int* nextCoord(int *arr){
     int tmp = arr[1];
@@ -40,7 +42,6 @@ int main(int argc, char * argv[])
 {
 
     bool metrics = false; // off by default
-    int nbr = 4; // p2 by default
     int thread_mode = 1; // t1 by default
 
     if (contains(argc, argv, "-t0")) // t0

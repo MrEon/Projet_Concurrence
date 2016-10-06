@@ -8,7 +8,6 @@
 #define endy1 60
 #define endy2 68
 
-#define nbr 8 //PPl for testing
 
 struct Grid;
 
@@ -43,7 +42,7 @@ private:
 
 struct Grid {
     int matrix[512][128] = {{0}};
-    Person ppl[nbr];
+    Person ppl[];
 };
 
 #endif //GESTION_THREADS_PERSON_H
