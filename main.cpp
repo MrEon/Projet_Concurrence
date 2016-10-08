@@ -1,9 +1,16 @@
+/**
+ * Main file of the project
+ *
+ * @author Renaud Costa
+ * @version 1.0
+ *
+ */
+
 #include <iostream>
 #include <pthread.h>
 #define num_threads 4
 
 #include <string>
-
 
 using namespace std;
 

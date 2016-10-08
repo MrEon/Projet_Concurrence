@@ -1,6 +1,12 @@
-//
-// Created by user on 06/10/16.
-//
+/**
+ *
+ * Person class header
+ *
+ * @author Paul Lafaurie
+ * @version 1.0
+ *
+ */
+
 
 #ifndef GESTION_THREADS_PERSON_H
 #define GESTION_THREADS_PERSON_H

@@ -1,6 +1,11 @@
-//
-// Created by user on 06/10/16.
-//
+/**
+ *
+ * Person class that represents a Person who will move on the grid
+ *
+ * @author Paul Lafaurie
+ * @version 1.0
+ *
+ */
 
 #include "Person.h"
 
