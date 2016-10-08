@@ -1,7 +1,7 @@
 #include <iostream>
 #include <pthread.h>
 #define num_threads 4
-
+#define nbr 16
 #include <string>
 
 
@@ -13,11 +13,11 @@ using namespace std;
 struct Args{
     int *zone;
     int id;
-    Grid grid;
+    Grid *grid;
     bool *arrived;
 };
 
-static int nbr = 4; // p2 by default
+int numbr = nbr; // p2 by default
 
 //Produces the next coordinates to use for spawning purpouses
 int* nextCoord(int *arr){
@@ -30,8 +30,8 @@ int* nextCoord(int *arr){
 }
 //Checks if every one has reached the exit
 bool check(bool arr[]){
-    for(int i = 0; i<nbr; i++){
-        if(!arr[i])
+    for(int j = 0; j<nbr ; j++){
+        if(!arr[j])
             return false;
     }
     return true;
@@ -78,8 +78,7 @@ int execute(){
     printf("\nDone!");
 }
 
-int * init_t1(Grid &grid, int *ptr){
-    int zones[nbr];
+void init_t1(Grid &grid, int *ptr, int *zones ){
     for(int i = 0; i<nbr; i++){
         grid.ppl[i] = Person(ptr[0], ptr[1], i+1);
         grid.matrix[ptr[0]][ptr[1]] = i+1;//PPl are 1x1 for now
@@ -96,18 +95,17 @@ int * init_t1(Grid &grid, int *ptr){
         }
         ptr = nextCoord(ptr);
     }
-    return zones;
 }
 
 //Changes zone  if necessary
 void zone_set(Args *arg, int index){
-    if(arg->grid.ppl[index].getX()>255){
-        if(arg->grid.ppl[index].getY()>63)
+    if(arg->grid->ppl[index].getX()>255){
+        if(arg->grid->ppl[index].getY()>63)
             arg->zone[index] = 3;
         else
             arg->zone[index] = 4;
     }else{
-        if(arg->grid.ppl[index].getY()>63)
+        if(arg->grid->ppl[index].getY()>63)
             arg->zone[index] = 2;
         else
             arg->zone[index] = 1;
@@ -115,20 +113,22 @@ void zone_set(Args *arg, int index){
 }
 
 void *zone_mgmt(void *args){
-    printf("Hello world\n");
+    printf("hello\n");
     Args *arg = (Args *)args;
-    printf("lets manage! %d", arg->id);
+    int id = arg->id;
+    printf("Hello from %d\n", id);
     while(!check(arg->arrived)) {
         for (int i = 0; i < nbr; i++) {
-            if (arg->zone[i] == arg->id) {
+           // printf("in da 4, ID: %d, Looking at person in  zone: %d\n", id, arg->zone[i]);
+            if (arg->zone[i] == id ) {
                     if (!arg->arrived[i]) {
-                        arg->grid.ppl[i] = arg->grid.ppl[i].move(arg->grid);
+                        arg->grid->ppl[i] = arg->grid->ppl[i].move(*arg->grid);
                         zone_set(arg, i);
                     }
-                    printf("Person n° %d",i);
-                    arg->grid.ppl[i].afficher();
-                    if (arg->grid.ppl[i].getX() == endx &&
-                        (arg->grid.ppl[i].getY() >= endy1 || arg->grid.ppl[i].getY() < endy2))
+                    printf("Person n° %d, zone: %d\n",i, id);
+                    arg->grid->ppl[i].afficher();
+                    if (arg->grid->ppl[i].getX() == endx &&
+                        (arg->grid->ppl[i].getY() >= endy1 || arg->grid->ppl[i].getY() < endy2))
                         arg->arrived[i] = true;
             }
         }
@@ -137,25 +137,53 @@ void *zone_mgmt(void *args){
 }
 
 pthread_t * init_threads(pthread_t threads[], Args *args){
+
+}
+
+
+//t1 main
+void four_threads(){
+    int coord[] = {506, 2};
+    int *ptr = coord;
+    //Exit condition && tells the algorithm when to stop moving the ones already there to focus on the ppl still on the field
+    bool arrived[nbr] = {false};
+    Grid grid;
+    int zones[nbr];
+    init_t1(grid,ptr, zones);
+    pthread_t threads[num_threads];
+
+    Args arg;
+    arg.zone = zones;
+    arg.arrived = arrived;
+    arg.grid = &grid;
+
+    Args tab_arg[num_threads];
+
+    //init threads
     int rc;
     for( int i=0; i < num_threads; i++ ){
-        cout << "main() : creating thread, " << i << endl;
-        args->id =i;
+        tab_arg[i] = arg;
+        tab_arg[i].id = i+1;
+        cout << "main() : creating thread, " << i+1 << endl;
         rc = pthread_create(&threads[i], NULL,
-                            zone_mgmt, (void *)args);
+                            zone_mgmt, (void *)&tab_arg[i]);
+        printf("created!\n");
         if (rc){
             cout << "Error:unable to create thread," << rc << endl;
             exit(-1);
         }
     }
+    for(int i = num_threads; i>0; i--){
+        printf("Now we wait for %d\n", i);
+        pthread_join(threads[i-1],NULL);
+    }
     pthread_exit(NULL);
+    printf("\nDone!");
 }
 
 
-
-
 int main(int argc, char * argv[]) {
-
+    /*
     bool metrics = false; // off by default
     int thread_mode = 1; // t1 by default
 
@@ -176,50 +204,16 @@ int main(int argc, char * argv[]) {
 
     if (contains(argc, argv, "-p4")) // 16 people
     {
-        nbr = 16;
+        numbr = 16;
     } else if (contains(argc, argv, "-p8")) // 256 people
     {
-        nbr = 256;
+        numbr = 256;
     }
 
     cout << nbr << " " << metrics << " " << thread_mode;
 
     execute();
-
-    return 0;
-}
-
-//t1 main
-void four_threads(){
-    int coord[] = {506, 2};
-    int *ptr = coord;
-    //Exit condition && tells the algorithm when to stop moving the ones already there to focus on the ppl still on the field
-    bool arrived[nbr] = {false};
-    Grid grid;
-    int *zones = init_t1(grid,ptr);
-    pthread_t threads[num_threads];
-
-    Args arg;
-    arg.zone = zones;
-    arg.arrived = arrived;
-    arg.grid = grid;
-
-    init_threads(threads,&arg);
-
-
-    for(int i = 0; i<num_threads; i++){
-        pthread_join(threads[i],NULL);
-        printf("Waiting");
-    }
-
-    printf("\nDone!");
-}
-
-
-
-int main()
-{
-    //execute();
+    */
     four_threads();
     return 0;
 }
