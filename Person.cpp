@@ -63,10 +63,11 @@ Person Person::move(Grid &grid)
         moved.y = this->y-1;
     else if(this->y<endy1)
         moved.y = this->y+1;
-    else
-        moved.x = this->x-1;
+    else {
+        moved.x = this->x - 1;
         grid.matrix[this->x][this->y] -= this->id;
         grid.matrix[moved.x][moved.y] += this->id;
+    }
     return moved;
 }
 /*int Person::distance(const Person &P) const
