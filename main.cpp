@@ -17,18 +17,17 @@ using namespace std;
 
 #include "Person.h"
 
-
+//Structure de données contenant les arguments passés aux threads lors de leur creation
 struct Args{
-    int nbr;
-    int *zone;
-    int id;
-    Grid *grid;
-    vector<bool> arrived;
+    int nbr; //Nombre d'entité sur le champ (l'option -p[0..9] )
+    int *zone;// Champ uniquement utilisé pour -t1, pour determiner quelle entité se situe dans quelle zone à l'instant t
+    int id; //Identificateur du thread, c'est son "numero de zone" avec -t1, et cela correspond à l'id de la Person qu'il gère en -t2
+    Grid *grid; //Structure Grid, centrale à l'exectution, partagée par tout les threads (plus de details dans Person.h)
 };
 
 
 
-//Produces the next coordinates to use for spawning purpouses
+//Fonction de génération des prochaines coordonées de spawn, puisqu'on souhaite pour le moment avoir chaque Person partant d'un même endroit fixe
 int* nextCoord(int *arr){
     int tmp = arr[1];
     arr[1] = (arr[1]+8)%128;
@@ -37,15 +36,17 @@ int* nextCoord(int *arr){
 
     return arr;
 }
-//Checks if every one has reached the exit
-bool check(vector<bool> arr){
-    for(int j = 0; j < sizeof(arr)/sizeof(bool); j++){
-        if(!arr[j])
+//Verifie si toute les Person sont arrivées, c'est la condition de sortie de chaque fonction
+bool check(Grid *grid, int nbr){
+    for(int j = 0; j < nbr ; j++){
+        if(!grid->ppl[j].getArrived())
             return false;
     }
     return true;
 }
 
+
+//Pour savoir si un argument est present dans le tableau des paramètres
 bool contains(int argc, char * argv [], string arg)
 {
     for (int i = 0; i < argc; i++)
@@ -56,6 +57,8 @@ bool contains(int argc, char * argv [], string arg)
     return false;
 }
 
+
+//initialise la structure Grid à 0 partout, et prend pour valeur l'id des personnes presentes sur chaque case
 void init(Grid &grid, int *ptr, int nbr){
     for(int i = 0; i<nbr; i++){
 
@@ -65,28 +68,22 @@ void init(Grid &grid, int *ptr, int nbr){
     }
 }
 
-//The heart of the exectution process
+//Le coeur de l'execution de -t0
 int execute(int nbr){
     int coord[] = {506, 2};
     int *ptr = coord;
-    //Exit condition && tells the algorithm when to stop moving the ones already there to focus on the ppl still on the field
-    vector<bool> arrived = {false};
     Grid grid;
     cout << "test";
     init(grid,ptr, nbr);
 
-    while(!check(arrived)){
+    while(!check(&grid, nbr)){
         for(int i = 0; i<nbr; i++) {
-            if (!arrived[i])
+            if (!grid.ppl[i].getArrived())
                 grid.ppl[i] = grid.ppl[i].move(grid);
-
-            if (grid.ppl[i].getX() == endx && (grid.ppl[i].getY() >= endy1 || grid.ppl[i].getY() < endy2) &&
-                !arrived[i]) {
-            arrived[i] = true;
-                printf("Person %d has arrived!\n",grid.ppl[i].getID());
-            }
         }
     }
+
+
     printf("Freeing memory\n");
     for(int i = 0; i<nbr; i++)
         grid.ppl[i].~Person();
@@ -99,6 +96,7 @@ int execute(int nbr){
 
 }
 
+//initialisation particulière pour -t1, qui demande un syteme de zones un peu particulier à mettre en oeuvre (il faut placer les Person dès l'init)
 void init_t1(Grid &grid, int *ptr, int *zones , int nbr){
     for(int i = 0; i<nbr; i++){
         grid.ppl[i] = Person(ptr[0], ptr[1], i+1);
@@ -118,7 +116,7 @@ void init_t1(Grid &grid, int *ptr, int *zones , int nbr){
     }
 }
 
-//Changes zone  if necessary
+//Verifie et change au cas echeant la zone dans laquelle est repertoriée chaque entité de Person
 void zone_set(Args *arg, int index){
     if(arg->grid->ppl[index].getX()>255){
         if(arg->grid->ppl[index].getY()>63)
@@ -133,23 +131,19 @@ void zone_set(Args *arg, int index){
     }
 }
 
+//Fonction exectutée par les threads en -t1
 void *zone_mgmt(void *args){
     Args *arg = (Args *)args;
     int id = arg->id;
-    printf("Hello from %d\n", id);
-    while(!check(arg->arrived)) {
+    while(!check(arg->grid, arg->nbr)) {
         for (int i = 0; i < arg->nbr; i++) {
-           // printf("in da 4, ID: %d, Looking at person in  zone: %d\n", id, arg->zone[i]);
-            if (arg->zone[i] == id ) {
-                    if (!arg->arrived[i]) {
+            if (arg->zone[i] == id ) {//Pour savoir si le  thread doit affecter ou pas une Person,
+                // il regarde si l'inidice correspondant à la Person dans l'array zone si elle est repertoriée dans la bonne zone
+                    if (!arg->grid->ppl[i].getArrived()) {
                         arg->grid->ppl[i] = arg->grid->ppl[i].move(*arg->grid);
                         zone_set(arg, i);
                     }
-                    printf("Person n° %d, zone: %d\n",i, id);
-                    arg->grid->ppl[i].afficher();
-                    if (arg->grid->ppl[i].getX() == endx &&
-                        (arg->grid->ppl[i].getY() >= endy1 || arg->grid->ppl[i].getY() < endy2) && !arg->arrived[i])
-                        arg->arrived[i] = true;
+
             }
         }
     }
@@ -162,16 +156,13 @@ void *zone_mgmt(void *args){
 void four_threads(int nbr){
     int coord[] = {506, 2};
     int *ptr = coord;
-    //Exit condition && tells the algorithm when to stop moving the ones already there to focus on the ppl still on the field
-    vector<bool> arrived = {false};
     Grid grid;
     int zones[nbr];
     init_t1(grid,ptr, zones,nbr);
-    pthread_t threads[num_threads];
+    pthread_t threads[num_threads];//Tableau contenant les differents threads crée ci-après
 
     Args arg;
     arg.zone = zones;
-    arg.arrived = arrived;
     arg.grid = &grid;
     arg.nbr = nbr;
 
@@ -191,30 +182,27 @@ void four_threads(int nbr){
             exit(-1);
         }
     }
-    for(int i = num_threads; i>0; i--){
-        printf("Now we wait for %d\n", i);
+
+
+    for(int i = num_threads; i>0; i--)
         pthread_join(threads[i-1],NULL);
-    }
+
+    cout<<"Done!"<<endl;
     pthread_exit(NULL);
-    printf("\nDone!");
 }
 
-
+//Fonction executée par chaque thread dans -t2
 void *many_threads(void *args){
     Args *arg = (Args *)args;
     int id = arg->id;
-    while(arg->arrived[id]){
+    while(arg->grid->ppl[id].getArrived()){
         arg->grid->ppl[id] = arg->grid->ppl[id].move(*arg->grid);
-        if(arg->grid->ppl[id].getX() == endx &&
-           (arg->grid->ppl[id].getY() >= endy1 || arg->grid->ppl[id].getY() < endy2) &&
-           !arg->arrived[id])
-            arg->arrived[id] = true;
     }
     cout << id<< " has arrived"<<endl;
     //pthread_exit(NULL);
 }
 
-
+//t2 main
 void to_each_a_thread(int nbr){
     int coord[] = {506, 2};
     int *ptr = coord;
@@ -224,8 +212,6 @@ void to_each_a_thread(int nbr){
     pthread_t threads[nbr];
 
     Args arg;
-    for(int i = 0; i<nbr;i++)
-        arg.arrived[i] = false;
     arg.grid = &grid;
 
     Args tab_arg[nbr];

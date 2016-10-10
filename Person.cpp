@@ -21,7 +21,9 @@ Person::Person() : x(0), y(0), id(0)
 {}
 
 Person::Person(int x, int y, int id) :x(x), y(y), id(id)
-{}
+{
+    this->arrived = false;
+}
 
 Person::~Person()
 {}
@@ -34,6 +36,11 @@ void Person::setX(int x)
 void Person::setY(int y)
 {
     this->y = y;
+}
+
+void Person::setArrived(bool b)
+{
+    this->arrived = b;
 }
 
 int Person::getX() const
@@ -51,47 +58,40 @@ int Person::getID() const
     return this->id;
 }
 
+bool Person::getArrived() const
+{
+    return this->arrived;
+}
+
+
 Person Person::move(Grid &grid)
 {
     Person moved;
     moved.y = this->y;
     moved.x = this->x;
     moved.id = this->id;
-
-    if(this->y>=endy2 )
+    moved.arrived = this->arrived;
+    //L'algo de deplacement est très simple, il vérifie en premier lieu si l'entité est arrivée (auquel cas pas de deplacement necessaire)
+    if (this->x == endx && (this->y >= endy1 || this->y < endy2) && !this->arrived)
+        moved.arrived = true;
+    else if(this->y>=endy2 )//Sinon, l'entité va se placer en premier lieu vers le bon intervalle de coordonées en ordonnées
         moved.y = this->y-1;
     else if(this->y<endy1)
         moved.y = this->y+1;
-    else {
+    else//Si l'ordonnée est bonne, on a plus que bouger en abscice jusqu'a toucher au but
         moved.x = this->x - 1;
+
         grid.matrix[this->x][this->y] -= this->id;
         grid.matrix[moved.x][moved.y] += this->id;
-    }
+
+
     return moved;
 }
-/*int Person::distance(const Person &P) const
-{
-    int dx = this->x - P.x;
-    int dy = this->y - P.y;
-    return sqrt(dx*dx + dy*dy);
-}
 
-Person Person::milieu(const Person &P) const
-{
-    Person result;
-    result.x = (P.x + this->x) / 2;
-    result.y = (P.y + this->y) / 2;
-    return result;
-}
-
-void Person::saisir()
-{
-    cout << "Tapez l'abscisse : ";  cin >> this->x;
-    cout << "Tapez l'ordonnée : ";  cin >> this->y;
-}
-*/
+//Fonction principalement utilisée pour du debeug, conjoitement avec GDB
 void Person::afficher() const
 {
     cout << "X vaut " << this->x << endl;
     cout << "Y vaut " << this->y << endl;
+    cout << "Statut d'arrivee: " << this->arrived<<endl;
 }
