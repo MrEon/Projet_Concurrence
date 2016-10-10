@@ -9,8 +9,9 @@
 #include <iostream>
 #include <pthread.h>
 #define num_threads 4
-#define nbr 4
 #include <string>
+#include <vector>
+
 
 using namespace std;
 
@@ -18,13 +19,14 @@ using namespace std;
 
 
 struct Args{
+    int nbr;
     int *zone;
     int id;
     Grid *grid;
-    bool *arrived;
+    vector<bool> arrived;
 };
 
-int numbr = nbr; // p2 by default
+
 
 //Produces the next coordinates to use for spawning purpouses
 int* nextCoord(int *arr){
@@ -36,8 +38,8 @@ int* nextCoord(int *arr){
     return arr;
 }
 //Checks if every one has reached the exit
-bool check(bool arr[]){
-    for(int j = 0; j<nbr ; j++){
+bool check(vector<bool> arr){
+    for(int j = 0; j < sizeof(arr)/sizeof(bool); j++){
         if(!arr[j])
             return false;
     }
@@ -54,7 +56,7 @@ bool contains(int argc, char * argv [], string arg)
     return false;
 }
 
-void init(Grid &grid, int *ptr){
+void init(Grid &grid, int *ptr, int nbr){
     for(int i = 0; i<nbr; i++){
 
         grid.ppl[i] = Person(ptr[0], ptr[1], i+1);
@@ -64,13 +66,14 @@ void init(Grid &grid, int *ptr){
 }
 
 //The heart of the exectution process
-void execute(){
+int execute(int nbr){
     int coord[] = {506, 2};
     int *ptr = coord;
     //Exit condition && tells the algorithm when to stop moving the ones already there to focus on the ppl still on the field
-    bool arrived[nbr] = {false};
+    vector<bool> arrived = {false};
     Grid grid;
-    init(grid,ptr);
+    cout << "test";
+    init(grid,ptr, nbr);
 
     while(!check(arrived)){
         for(int i = 0; i<nbr; i++) {
@@ -96,7 +99,7 @@ void execute(){
 
 }
 
-void init_t1(Grid &grid, int *ptr, int *zones ){
+void init_t1(Grid &grid, int *ptr, int *zones , int nbr){
     for(int i = 0; i<nbr; i++){
         grid.ppl[i] = Person(ptr[0], ptr[1], i+1);
         grid.matrix[ptr[0]][ptr[1]] = i+1;//PPl are 1x1 for now
@@ -135,7 +138,7 @@ void *zone_mgmt(void *args){
     int id = arg->id;
     printf("Hello from %d\n", id);
     while(!check(arg->arrived)) {
-        for (int i = 0; i < nbr; i++) {
+        for (int i = 0; i < arg->nbr; i++) {
            // printf("in da 4, ID: %d, Looking at person in  zone: %d\n", id, arg->zone[i]);
             if (arg->zone[i] == id ) {
                     if (!arg->arrived[i]) {
@@ -156,20 +159,21 @@ void *zone_mgmt(void *args){
 
 
 //t1 main
-void four_threads(){
+void four_threads(int nbr){
     int coord[] = {506, 2};
     int *ptr = coord;
     //Exit condition && tells the algorithm when to stop moving the ones already there to focus on the ppl still on the field
-    bool arrived[nbr] = {false};
+    vector<bool> arrived = {false};
     Grid grid;
     int zones[nbr];
-    init_t1(grid,ptr, zones);
+    init_t1(grid,ptr, zones,nbr);
     pthread_t threads[num_threads];
 
     Args arg;
     arg.zone = zones;
     arg.arrived = arrived;
     arg.grid = &grid;
+    arg.nbr = nbr;
 
     Args tab_arg[num_threads];
 
@@ -211,13 +215,13 @@ void *many_threads(void *args){
 }
 
 
-void to_each_a_thread(){
+void to_each_a_thread(int nbr){
     int coord[] = {506, 2};
     int *ptr = coord;
     //Exit condition && tells the algorithm when to stop moving the ones already there to focus on the ppl still on the field
     bool arrived[nbr] = {false};
     Grid grid;
-    init(grid,ptr);
+    init(grid,ptr, nbr);
     pthread_t threads[nbr];
 
     Args arg;
@@ -246,10 +250,30 @@ void to_each_a_thread(){
 
 
 
+}
+
+//metrics
+int average_time(int thread_mode, int nbr)
+{
+    long double t = time(0);
+    int results [5];
+    switch (thread_mode)
+    {
+        case 0:
+            int a = 0;
+            for (int i = 0; i < 5; i++)
+            {
+                execute(nbr);
+            }
+    }
+}
+
 int main(int argc, char * argv[]) {
-    /*
+
+
     bool metrics = false; // off by default
     int thread_mode = 1; // t1 by default
+    int nbr = 16; // p4 by default
 
     if (contains(argc, argv, "-t0")) // t0
     {
@@ -266,18 +290,37 @@ int main(int argc, char * argv[]) {
         metrics = true;
     }
 
-    if (contains(argc, argv, "-p4")) // 16 people
+    if (contains(argc, argv, "-p2")) // 4 people
     {
-        numbr = 16;
+        nbr = 4;
     } else if (contains(argc, argv, "-p8")) // 256 people
     {
-        numbr = 256;
+        nbr = 256;
     }
 
     cout << nbr << " " << metrics << " " << thread_mode;
-    */
-    //execute();
-    to_each_a_thread();
-    //four_threads();
+
+
+    cout << "NUMBER: " << nbr;
+    //return 0;
+
+    switch (thread_mode)
+    {
+        case 0:
+            execute(nbr);
+            break;
+        case 1:
+            four_threads(nbr);
+            break;
+        case 2:
+            to_each_a_thread(nbr);
+            break;
+    }
+
+    if (metrics)
+    {
+        cout << average_time(thread_mode, nbr);
+    }
+
     return 0;
 }
