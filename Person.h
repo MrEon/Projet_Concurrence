@@ -47,6 +47,7 @@ public:
 
 private:
     int x,y,id;
+    bool arrived;//faudrait utiliser ça plutot!! et pas le vector de bool
 };
 
 struct Grid {

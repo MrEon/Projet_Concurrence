@@ -1,7 +1,7 @@
 /**
  * Main file of the project
  *
- * @author Renaud Costa
+ * @author Renaud Costa Paul Lafaurie
  * @version 1.0
  *
  */
@@ -219,13 +219,13 @@ void to_each_a_thread(int nbr){
     int coord[] = {506, 2};
     int *ptr = coord;
     //Exit condition && tells the algorithm when to stop moving the ones already there to focus on the ppl still on the field
-    bool arrived[nbr] = {false};
     Grid grid;
     init(grid,ptr, nbr);
     pthread_t threads[nbr];
 
     Args arg;
-    arg.arrived = arrived;
+    for(int i = 0; i<nbr;i++)
+        arg.arrived[i] = false;
     arg.grid = &grid;
 
     Args tab_arg[nbr];
@@ -250,7 +250,7 @@ void to_each_a_thread(int nbr){
 
 
 
-}
+
 
 //metrics
 int average_time(int thread_mode, int nbr)
