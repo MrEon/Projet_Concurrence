@@ -17,15 +17,14 @@ using namespace std;
 //Person = 4x4 square, referenced by top left corner, positive y going down, and positive x going right
 
 
-Person::Person() : x(0), y(0)
+Person::Person() : x(0), y(0), id(0)
 {}
 
-Person::Person(int x, int y, int id)/* : x(x), y(y)*/
-{
-    this->x = x;
-    this->y = y;
-    this->id = id;
-}
+Person::Person(int x, int y, int id) :x(x), y(y), id(id)
+{}
+
+Person::~Person()
+{}
 
 void Person::setX(int x)
 {

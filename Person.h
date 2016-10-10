@@ -26,6 +26,8 @@ public:
     // Constructeurs
     Person();
     Person(int x, int y, int id);
+    //Destructor
+    ~Person();
 
     //Accesseurs et mutateurs
     void setX(int x);
@@ -33,6 +35,7 @@ public:
     int getX() const;
     int getY() const;
     int getID() const;
+
 
     // Autres méthodes
     Person move(Grid &grid);

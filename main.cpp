@@ -9,7 +9,7 @@
 #include <iostream>
 #include <pthread.h>
 #define num_threads 4
-#define nbr 16
+#define nbr 4
 #include <string>
 
 using namespace std;
@@ -56,6 +56,7 @@ bool contains(int argc, char * argv [], string arg)
 
 void init(Grid &grid, int *ptr){
     for(int i = 0; i<nbr; i++){
+
         grid.ppl[i] = Person(ptr[0], ptr[1], i+1);
         grid.matrix[ptr[0]][ptr[1]] = i+1;//PPl are 1x1 for now
         ptr = nextCoord(ptr);
@@ -63,26 +64,36 @@ void init(Grid &grid, int *ptr){
 }
 
 //The heart of the exectution process
-int execute(){
+void execute(){
     int coord[] = {506, 2};
     int *ptr = coord;
     //Exit condition && tells the algorithm when to stop moving the ones already there to focus on the ppl still on the field
     bool arrived[nbr] = {false};
     Grid grid;
-
     init(grid,ptr);
 
-
     while(!check(arrived)){
-        for(int i = 0; i<nbr; i++){
-            if(!arrived[i])
+        for(int i = 0; i<nbr; i++) {
+            if (!arrived[i])
                 grid.ppl[i] = grid.ppl[i].move(grid);
 
-            if(grid.ppl[i].getX() == endx && (grid.ppl[i].getY() >= endy1 || grid.ppl[i].getY() < endy2))
-                arrived[i] = true;
+            if (grid.ppl[i].getX() == endx && (grid.ppl[i].getY() >= endy1 || grid.ppl[i].getY() < endy2) &&
+                !arrived[i]) {
+            arrived[i] = true;
+                printf("Person %d has arrived!\n",grid.ppl[i].getID());
+            }
         }
     }
-    printf("\nDone!");
+    printf("Freeing memory\n");
+    for(int i = 0; i<nbr; i++)
+        grid.ppl[i].~Person();
+
+    for(int i = 0; i<512; i++)
+        free(grid.matrix[i]);
+
+
+    printf("Done!\n");
+
 }
 
 void init_t1(Grid &grid, int *ptr, int *zones ){
@@ -120,7 +131,6 @@ void zone_set(Args *arg, int index){
 }
 
 void *zone_mgmt(void *args){
-    printf("hello\n");
     Args *arg = (Args *)args;
     int id = arg->id;
     printf("Hello from %d\n", id);
@@ -135,7 +145,7 @@ void *zone_mgmt(void *args){
                     printf("Person n° %d, zone: %d\n",i, id);
                     arg->grid->ppl[i].afficher();
                     if (arg->grid->ppl[i].getX() == endx &&
-                        (arg->grid->ppl[i].getY() >= endy1 || arg->grid->ppl[i].getY() < endy2))
+                        (arg->grid->ppl[i].getY() >= endy1 || arg->grid->ppl[i].getY() < endy2) && !arg->arrived[i])
                         arg->arrived[i] = true;
             }
         }
@@ -143,9 +153,6 @@ void *zone_mgmt(void *args){
     pthread_exit(NULL);
 }
 
-pthread_t * init_threads(pthread_t threads[], Args *args){
-
-}
 
 
 //t1 main
@@ -189,6 +196,56 @@ void four_threads(){
 }
 
 
+void *many_threads(void *args){
+    Args *arg = (Args *)args;
+    int id = arg->id;
+    while(arg->arrived[id]){
+        arg->grid->ppl[id] = arg->grid->ppl[id].move(*arg->grid);
+        if(arg->grid->ppl[id].getX() == endx &&
+           (arg->grid->ppl[id].getY() >= endy1 || arg->grid->ppl[id].getY() < endy2) &&
+           !arg->arrived[id])
+            arg->arrived[id] = true;
+    }
+    cout << id<< " has arrived"<<endl;
+    //pthread_exit(NULL);
+}
+
+
+void to_each_a_thread(){
+    int coord[] = {506, 2};
+    int *ptr = coord;
+    //Exit condition && tells the algorithm when to stop moving the ones already there to focus on the ppl still on the field
+    bool arrived[nbr] = {false};
+    Grid grid;
+    init(grid,ptr);
+    pthread_t threads[nbr];
+
+    Args arg;
+    arg.arrived = arrived;
+    arg.grid = &grid;
+
+    Args tab_arg[nbr];
+
+    //init threads
+    int rc;
+    for( int i=0; i < nbr; i++ ){
+        tab_arg[i] = arg;
+        tab_arg[i].id = i;
+        cout << "main() : creating thread, " << i+1 << endl;
+        rc = pthread_create(&threads[i], NULL,
+                            many_threads, (void *)&tab_arg[i]);//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if (rc){
+            cout << "Error:unable to create thread," << rc << endl;
+            exit(-1);
+        }
+    }
+    pthread_exit(NULL);
+}
+
+
+
+
+
 int main(int argc, char * argv[]) {
     /*
     bool metrics = false; // off by default
@@ -218,9 +275,9 @@ int main(int argc, char * argv[]) {
     }
 
     cout << nbr << " " << metrics << " " << thread_mode;
-
-    execute();
     */
-    four_threads();
+    //execute();
+    to_each_a_thread();
+    //four_threads();
     return 0;
 }
