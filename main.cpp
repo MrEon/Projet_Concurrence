@@ -240,6 +240,8 @@ int main(int argc, char * argv[]) {
     }
 
 
+    cout << "NUMBER: " << nbr;
+    //return 0;
 
     switch (thread_mode)
     {
