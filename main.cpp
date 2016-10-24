@@ -8,6 +8,8 @@
 
 #include <iostream>
 #include <pthread.h>
+#include <mutex>
+#include <condition_variable>
 #define num_threads 4
 #include <string>
 #include <vector>
@@ -17,12 +19,16 @@ using namespace std;
 
 #include "Person.h"
 
+std::mutex mtx;             // mutex for critical section
+std::condition_variable cv; // condition variable for critical section
+
 //Structure de données contenant les arguments passés aux threads lors de leur creation
 struct Args{
     int nbr; //Nombre d'entité sur le champ (l'option -p[0..9] )
     int *zone;// Champ uniquement utilisé pour -t1, pour determiner quelle entité se situe dans quelle zone à l'instant t
     int id; //Identificateur du thread, c'est son "numero de zone" avec -t1, et cela correspond à l'id de la Person qu'il gère en -t2
     Grid *grid; //Structure Grid, centrale à l'exectution, partagée par tout les threads (plus de details dans Person.h)
+    bool ready = false;
 };
 
 
@@ -45,6 +51,14 @@ bool check(Grid *grid, int nbr){
     return true;
 }
 
+
+/* Changes ready to true, and tells the threads to move */
+void run(Args& arg){
+    while(!mtx.try_lock());
+    arg.ready = true;
+    cv.notify_all();
+    mtx.unlock();
+}
 
 //Pour savoir si un argument est present dans le tableau des paramètres
 bool contains(int argc, char * argv [], string arg)
@@ -133,9 +147,11 @@ void zone_set(Args *arg, int index){
 
 //Fonction exectutée par les threads en -t1
 void *zone_mgmt(void *args){
+    std::unique_lock<std::mutex> lck(mtx);
     Args *arg = (Args *)args;
     int id = arg->id;
     while(!check(arg->grid, arg->nbr)) {
+        while(!arg->ready){ cv.wait(lck); }
         for (int i = 0; i < arg->nbr; i++) {
             if (arg->zone[i] == id ) {//Pour savoir si le  thread doit affecter ou pas une Person,
                 // il regarde si l'inidice correspondant à la Person dans l'array zone si elle est repertoriée dans la bonne zone
@@ -146,8 +162,11 @@ void *zone_mgmt(void *args){
 
             }
         }
+        arg->ready = false;
+        cv.notify_all();
     }
-    pthread_exit(NULL);
+    cout<< id<<": All is done!"<<endl;
+    //pthread_exit(NULL);
 }
 
 
@@ -183,9 +202,17 @@ void four_threads(int nbr){
         }
     }
 
+    int id = 0;
+    while(!check(tab_arg[0].grid,num_threads)){
+        run(tab_arg[id%num_threads]);
+        id++;
+    }
 
-    for(int i = num_threads; i>0; i--)
-        pthread_join(threads[i-1],NULL);
+    for(int i = num_threads; i>0; i--){
+        if(pthread_join(threads[i-1], NULL))
+            cout<<"Error joining thread "<<i-1<<endl;
+        cout<<"Joined thread "<< i-1<<endl;
+    }
 
     cout<<"Done!"<<endl;
     pthread_exit(NULL);
@@ -193,13 +220,16 @@ void four_threads(int nbr){
 
 //Fonction executée par chaque thread dans -t2
 void *many_threads(void *args){
+    std::unique_lock<std::mutex> lck(mtx);
     Args *arg = (Args *)args;
     int id = arg->id;
-    while(arg->grid->ppl[id].getArrived()){
+    while(!arg->grid->ppl[id].getArrived()){
+        while(!arg->ready){ cv.wait(lck); }
         arg->grid->ppl[id] = arg->grid->ppl[id].move(*arg->grid);
+        arg->ready = false;
+        cv.notify_all();
     }
     cout << id<< " has arrived"<<endl;
-    //pthread_exit(NULL);
 }
 
 //t2 main
@@ -229,7 +259,18 @@ void to_each_a_thread(int nbr){
             exit(-1);
         }
     }
-    pthread_exit(NULL);
+    int id = 0;
+    while(!check(tab_arg[0].grid,nbr)){
+        run(tab_arg[id%nbr]);
+        id++;
+    }
+    for(int i = nbr; i>0; i--){
+        if(pthread_join(threads[i-1], NULL))
+            cout<<"Error joining thread "<<i-1<<endl;
+        cout<<"Joined thread "<< i-1<<endl;
+    }
+    //pthread_exit(NULL);
+    cout<<"Done!"<<endl;
 }
 
 
